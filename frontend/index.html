@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+    <title>light-wails-timer</title>
+    <script type="module" src="/src/main.ts"></script>
+</head>
+<body>
+<main class="app">
+    <div class="ring-wrap">
+        <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="ring-track" cx="60" cy="60" r="52"/>
+            <circle class="ring-progress" id="ring" cx="60" cy="60" r="52"/>
+        </svg>
+        <div class="time" id="time" aria-live="polite">--:--</div>
+    </div>
+
+    <div class="presets" role="group" aria-label="Интервал">
+        <button class="preset" type="button" data-minutes="15">15 мин</button>
+        <button class="preset" type="button" data-minutes="30">30 мин</button>
+        <button class="preset" type="button" data-minutes="60">60 мин</button>
+    </div>
+
+    <button class="stop" id="stop" type="button" disabled>Стоп</button>
+
+    <p class="notice" id="notice" role="status" hidden></p>
+</main>
+</body>
+</html>

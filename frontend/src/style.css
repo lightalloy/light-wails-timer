@@ -1,0 +1,131 @@
+:root {
+    color-scheme: dark;
+    --bg: #181a1b;
+    --panel: #202325;
+    --border: #3c4043;
+    --fg: #e8eaed;
+    --muted: #9aa0a6;
+    --green: #34a853;
+    --amber: #fbbc04;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+    -webkit-user-select: none;
+    user-select: none;
+    overflow: hidden;
+}
+
+.app {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 20px 18px;
+}
+
+.ring-wrap {
+    position: relative;
+    width: 170px;
+    height: 170px;
+}
+
+.ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.ring-track {
+    fill: none;
+    stroke: #2c2f31;
+    stroke-width: 8;
+}
+
+.ring-progress {
+    fill: none;
+    stroke: var(--green);
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.9s linear, stroke 0.2s linear;
+}
+
+body[data-status="idle"] .ring-progress {
+    stroke: #5f6368;
+}
+
+.time {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.5px;
+}
+
+.presets {
+    display: flex;
+    gap: 8px;
+}
+
+.preset,
+.stop {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    border-radius: 10px;
+    cursor: pointer;
+    font: inherit;
+    transition: background 0.15s linear, border-color 0.15s linear;
+}
+
+.preset {
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.preset:hover,
+.stop:not(:disabled):hover {
+    background: #2b2f31;
+    border-color: #5f6368;
+}
+
+.preset:focus-visible,
+.stop:focus-visible {
+    outline: 2px solid var(--green);
+    outline-offset: 2px;
+}
+
+.stop {
+    width: 100%;
+    max-width: 220px;
+    padding: 9px 12px;
+    font-size: 14px;
+}
+
+.stop:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.notice {
+    margin: 0;
+    max-width: 260px;
+    color: var(--amber);
+    font-size: 12px;
+    line-height: 1.35;
+    text-align: center;
+}

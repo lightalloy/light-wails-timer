@@ -1,0 +1,15 @@
+{
+	"fixed": {
+		"file_version": "0.1.0"
+	},
+	"info": {
+		"0409": {
+			"ProductVersion": "0.1.0",
+			"CompanyName": "My Company",
+			"FileDescription": "Минималистичный таймер обратного отсчёта с треем и уведомлениями",
+			"LegalCopyright": "© 2026, My Company",
+			"ProductName": "light-wails-timer",
+			"Comments": "This is a comment"
+		}
+	}
+}

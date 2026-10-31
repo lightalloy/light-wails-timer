@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=light-wails-timer
+Comment=Минималистичный таймер обратного отсчёта с треем и уведомлениями
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/light-wails-timer %u
+Terminal=false
+Type=Application
+Icon=light-wails-timer
+Categories=Utility;
+StartupWMClass=light-wails-timer
+
+ 

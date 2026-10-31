@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=light-wails-timer
+Exec=light-wails-timer
+Icon=light-wails-timer
+Categories=Development;
+Terminal=false
+Keywords=wails
+Version=1.0
+StartupNotify=false
