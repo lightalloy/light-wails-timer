@@ -90,7 +90,6 @@ func main() {
 
 	var (
 		tray          *application.SystemTray
-		menu          *application.Menu
 		autostartItem *application.MenuItem
 		lastStatus    timer.Status
 		lastPreset    int
@@ -139,15 +138,6 @@ func main() {
 
 		lastStatus = status
 		lastPreset = state.PresetMinutes
-
-		// The registration lives outside the app, so re-read it regularly: the
-		// user may remove the .desktop file (or registry entry) externally.
-		if autostartItem != nil {
-			if current := readAutostart(); current != autostartItem.Checked() {
-				autostartItem.SetChecked(current)
-				menu.Update()
-			}
-		}
 	}
 
 	core := service.New(
@@ -216,7 +206,6 @@ func main() {
 			app.Quit()
 		})
 
-		menu = rebuilt
 		tray.SetMenu(rebuilt)
 	}
 	buildMenu(timer.Idle, 0)
