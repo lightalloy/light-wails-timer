@@ -156,8 +156,10 @@ func main() {
 		wailsNotifier{service: notifier},
 		app.Autostart,
 		func(state service.State) {
-			app.Event.Emit("timer:state", state)
-			applyState(state)
+			application.InvokeAsync(func() {
+				app.Event.Emit("timer:state", state)
+				applyState(state)
+			})
 		},
 		log.Printf,
 	)
