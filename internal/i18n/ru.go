@@ -15,7 +15,10 @@ const (
 const (
 	MenuStatusIdle          = "Таймер неактивен"
 	MenuStatusRunningFormat = "Таймер активен (%d мин)"
+	MenuStatusPausedFormat  = "Таймер на паузе (%d мин)"
 	MenuStartFormat         = "Запустить на %d минут"
+	MenuPause               = "Пауза"
+	MenuResume              = "Продолжить"
 	MenuStop                = "Остановить"
 	MenuShow                = "Показать окно"
 	MenuAutostart           = "Запускать при входе"
@@ -55,4 +58,9 @@ func MenuStart(minutes int) string {
 // MenuStatusRunning formats the menu status line for a running timer.
 func MenuStatusRunning(minutes int) string {
 	return fmt.Sprintf(MenuStatusRunningFormat, minutes)
+}
+
+// MenuStatusPaused formats the menu status line for a paused timer.
+func MenuStatusPaused(minutes int) string {
+	return fmt.Sprintf(MenuStatusPausedFormat, minutes)
 }

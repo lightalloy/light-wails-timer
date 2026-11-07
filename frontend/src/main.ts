@@ -6,7 +6,7 @@ import { strings } from "./strings";
 
 /** Snapshot emitted by the Go side on every tick and state change. */
 interface Snapshot {
-    status: "idle" | "running";
+    status: "idle" | "running" | "paused";
     presetMinutes: number;
     remainingSec: number;
     totalSec: number;
@@ -19,6 +19,7 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 const timeElement = document.getElementById("time") as HTMLDivElement;
 const ringElement = document.getElementById("ring") as SVGCircleElement;
+const pauseButton = document.getElementById("pause") as HTMLButtonElement;
 const stopButton = document.getElementById("stop") as HTMLButtonElement;
 const noticeElement = document.getElementById("notice") as HTMLParagraphElement;
 const presetButtons = Array.from(
@@ -37,23 +38,29 @@ export function formatRemaining(seconds: number): string {
 
 /** Fraction of the interval that is still ahead (1 = full ring). */
 export function remainingFraction(snapshot: Snapshot): number {
-    if (snapshot.status !== "running" || snapshot.totalSec <= 0) {
+    if (
+        (snapshot.status !== "running" && snapshot.status !== "paused") ||
+        snapshot.totalSec <= 0
+    ) {
         return 1;
     }
     return Math.min(1, Math.max(0, snapshot.remainingSec / snapshot.totalSec));
 }
 
 function render(snapshot: Snapshot): void {
-    const running = snapshot.status === "running";
+    const active = snapshot.status === "running" || snapshot.status === "paused";
 
     document.body.dataset.status = snapshot.status;
-    timeElement.textContent = running
+    timeElement.textContent = active
         ? formatRemaining(snapshot.remainingSec)
         : strings.idleTime;
 
     ringElement.style.strokeDashoffset = `${RING_CIRCUMFERENCE * (1 - remainingFraction(snapshot))}`;
 
-    stopButton.disabled = !running;
+    pauseButton.disabled = !active;
+    pauseButton.textContent =
+        snapshot.status === "paused" ? strings.resume : strings.pause;
+    stopButton.disabled = !active;
 
     if (snapshot.notice) {
         noticeElement.textContent = snapshot.notice;
@@ -73,6 +80,14 @@ function startTimer(minutes: number): void {
 presetButtons.forEach((button) => {
     button.addEventListener("click", () => {
         startTimer(Number(button.dataset.minutes));
+    });
+});
+
+pauseButton.addEventListener("click", () => {
+    const paused = document.body.dataset.status === "paused";
+    const action = paused ? TimerService.Resume() : TimerService.Pause();
+    void action.catch((error: unknown) => {
+        console.error(paused ? "resume timer:" : "pause timer:", error);
     });
 });
 

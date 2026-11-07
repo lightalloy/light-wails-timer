@@ -1,6 +1,7 @@
 package timer
 
 import (
+	"errors"
 	"testing"
 	"time"
 )
@@ -207,5 +208,95 @@ func TestRestore(t *testing.T) {
 	}
 	if stale.Status != Idle {
 		t.Fatalf("status after stale restore = %q, want %q", stale.Status, Idle)
+	}
+}
+
+func TestPauseAndResume(t *testing.T) {
+	clock := newFakeClock()
+	tm := New(clock)
+	if _, err := tm.Start(PresetMedium); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	clock.Advance(10 * time.Minute)
+
+	snap, err := tm.Pause()
+	if err != nil {
+		t.Fatalf("Pause: %v", err)
+	}
+	if snap.Status != Paused || snap.RemainingSec != 1200 {
+		t.Fatalf("paused snapshot = %+v, want paused with 1200s", snap)
+	}
+
+	clock.Advance(5 * time.Minute)
+	if got := tm.Snapshot().RemainingSec; got != 1200 {
+		t.Fatalf("remaining while paused drifted to %d", got)
+	}
+
+	snap, finished := tm.Tick()
+	if finished {
+		t.Fatal("paused timer must not finish on tick")
+	}
+	if snap.Status != Paused {
+		t.Fatalf("status after tick = %q, want paused", snap.Status)
+	}
+
+	snap, err = tm.Resume()
+	if err != nil {
+		t.Fatalf("Resume: %v", err)
+	}
+	if snap.Status != Running || snap.RemainingSec != 1200 {
+		t.Fatalf("resumed snapshot = %+v, want running with 1200s", snap)
+	}
+
+	clock.Advance(2 * time.Minute)
+	snap, finished = tm.Tick()
+	if finished {
+		t.Fatal("timer finished too early after resume")
+	}
+	if snap.RemainingSec != 1080 {
+		t.Fatalf("remaining after resume tick = %d, want 1080", snap.RemainingSec)
+	}
+}
+
+func TestPauseRequiresRunning(t *testing.T) {
+	clock := newFakeClock()
+	tm := New(clock)
+
+	if _, err := tm.Pause(); !errors.Is(err, ErrNotRunning) {
+		t.Fatalf("Pause on idle: err = %v, want ErrNotRunning", err)
+	}
+	if _, err := tm.Resume(); !errors.Is(err, ErrNotPaused) {
+		t.Fatalf("Resume on idle: err = %v, want ErrNotPaused", err)
+	}
+}
+
+func TestRestorePaused(t *testing.T) {
+	clock := newFakeClock()
+	tm := New(clock)
+
+	snap := tm.RestorePaused(PresetShort, 450)
+	if snap.Status != Paused || snap.RemainingSec != 450 || snap.PresetMinutes != PresetShort {
+		t.Fatalf("restored paused snapshot = %+v", snap)
+	}
+
+	clock.Advance(time.Hour)
+	if got := tm.Snapshot().RemainingSec; got != 450 {
+		t.Fatalf("paused remaining drifted to %d after wall-clock jump", got)
+	}
+}
+
+func TestStopFromPaused(t *testing.T) {
+	clock := newFakeClock()
+	tm := New(clock)
+	if _, err := tm.Start(PresetLong); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	if _, err := tm.Pause(); err != nil {
+		t.Fatalf("Pause: %v", err)
+	}
+
+	snap := tm.Stop()
+	if snap.Status != Idle {
+		t.Fatalf("status = %q, want idle", snap.Status)
 	}
 }

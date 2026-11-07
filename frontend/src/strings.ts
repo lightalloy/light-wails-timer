@@ -2,6 +2,8 @@
 export const strings = {
     title: "light-wails-timer",
     idleTime: "--:--",
+    pause: "Пауза",
+    resume: "Продолжить",
     stop: "Стоп",
     presets: {
         15: "15 мин",

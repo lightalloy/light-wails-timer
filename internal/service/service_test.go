@@ -152,6 +152,76 @@ func TestStopClearsState(t *testing.T) {
 	}
 }
 
+func TestPausePersistsAndResumeContinues(t *testing.T) {
+	h := newHarness(t)
+	if err := h.svc.Start(timer.PresetMedium); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	h.clock.Advance(12 * time.Minute)
+
+	if err := h.svc.Pause(); err != nil {
+		t.Fatalf("Pause: %v", err)
+	}
+
+	state := h.svc.GetState()
+	if state.Status != "paused" || state.RemainingSec != 1080 {
+		t.Fatalf("unexpected paused state: %+v", state)
+	}
+
+	persisted, err := h.store.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if persisted == nil || persisted.Status != store.StatusPaused || persisted.RemainingSec != 1080 {
+		t.Fatalf("unexpected persisted paused state: %+v", persisted)
+	}
+
+	h.clock.Advance(3 * time.Minute)
+	h.svc.Tick()
+	if got := h.svc.GetState().RemainingSec; got != 1080 {
+		t.Fatalf("remaining drifted while paused: %d", got)
+	}
+
+	if err := h.svc.Resume(); err != nil {
+		t.Fatalf("Resume: %v", err)
+	}
+	state = h.svc.GetState()
+	if state.Status != "running" || state.RemainingSec != 1080 {
+		t.Fatalf("unexpected resumed state: %+v", state)
+	}
+
+	persisted, err = h.store.Load()
+	if err != nil {
+		t.Fatalf("Load after resume: %v", err)
+	}
+	if persisted == nil || persisted.Status != store.StatusRunning || persisted.Deadline.IsZero() {
+		t.Fatalf("unexpected persisted resumed state: %+v", persisted)
+	}
+}
+
+func TestRestorePausedTimer(t *testing.T) {
+	h := newHarness(t)
+	if err := h.store.Save(store.State{
+		Status:        store.StatusPaused,
+		PresetMinutes: 15,
+		RemainingSec:  420,
+	}); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	if err := h.svc.Restore(); err != nil {
+		t.Fatalf("Restore: %v", err)
+	}
+
+	state := h.svc.GetState()
+	if state.Status != "paused" || state.RemainingSec != 420 || state.PresetMinutes != 15 {
+		t.Fatalf("unexpected restored paused state: %+v", state)
+	}
+	if len(h.notifier.messages()) != 0 {
+		t.Fatalf("restore of a paused timer notified: %v", h.notifier.messages())
+	}
+}
+
 func TestFinishNotifiesOnceAndClearsState(t *testing.T) {
 	h := newHarness(t)
 	if err := h.svc.Start(timer.PresetMedium); err != nil {

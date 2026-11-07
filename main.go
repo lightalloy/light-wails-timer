@@ -111,9 +111,12 @@ func main() {
 
 		if tray != nil {
 			if status != lastStatus {
-				if status == timer.Running {
+				switch status {
+				case timer.Running:
 					tray.SetIcon(assets.IconActive)
-				} else {
+				case timer.Paused:
+					tray.SetIcon(assets.IconPaused)
+				default:
 					tray.SetIcon(assets.IconIdle)
 				}
 			}
@@ -161,19 +164,39 @@ func main() {
 	tray.SetTooltip(i18n.TooltipIdleText())
 
 	// The menu is rebuilt per state: idle offers the three presets, running
-	// offers "Стоп". Items are created fresh so no stale handler survives.
+	// and paused offer pause/resume and stop. Items are created fresh so no
+	// stale handler survives.
 	buildMenu = func(status timer.Status, minutes int) {
 		rebuilt := app.NewMenu()
 
-		if status == timer.Running {
+		switch status {
+		case timer.Running:
 			rebuilt.Add(i18n.MenuStatusRunning(minutes)).SetEnabled(false)
 			rebuilt.AddSeparator()
+			rebuilt.Add(i18n.MenuPause).OnClick(func(*application.Context) {
+				if err := core.Pause(); err != nil {
+					log.Printf("pause timer: %v", err)
+				}
+			})
 			rebuilt.Add(i18n.MenuStop).OnClick(func(*application.Context) {
 				if err := core.Stop(); err != nil {
 					log.Printf("stop timer: %v", err)
 				}
 			})
-		} else {
+		case timer.Paused:
+			rebuilt.Add(i18n.MenuStatusPaused(minutes)).SetEnabled(false)
+			rebuilt.AddSeparator()
+			rebuilt.Add(i18n.MenuResume).OnClick(func(*application.Context) {
+				if err := core.Resume(); err != nil {
+					log.Printf("resume timer: %v", err)
+				}
+			})
+			rebuilt.Add(i18n.MenuStop).OnClick(func(*application.Context) {
+				if err := core.Stop(); err != nil {
+					log.Printf("stop timer: %v", err)
+				}
+			})
+		default:
 			rebuilt.Add(i18n.MenuStatusIdle).SetEnabled(false)
 			rebuilt.AddSeparator()
 			for _, preset := range timer.Presets {

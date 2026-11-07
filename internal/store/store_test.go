@@ -26,6 +26,7 @@ func TestSaveAndLoadRoundTrip(t *testing.T) {
 	st := NewAt(path)
 
 	want := State{
+		Status:        StatusRunning,
 		PresetMinutes: 30,
 		StartedAt:     time.Now().Add(-time.Minute).Truncate(time.Second),
 		Deadline:      time.Now().Add(29 * time.Minute).Truncate(time.Second),
@@ -44,11 +45,56 @@ func TestSaveAndLoadRoundTrip(t *testing.T) {
 	if got.PresetMinutes != want.PresetMinutes {
 		t.Fatalf("preset = %d, want %d", got.PresetMinutes, want.PresetMinutes)
 	}
+	if got.Status != StatusRunning {
+		t.Fatalf("status = %q, want %q", got.Status, StatusRunning)
+	}
 	if !got.Deadline.Equal(want.Deadline) {
 		t.Fatalf("deadline = %v, want %v", got.Deadline, want.Deadline)
 	}
 	if got.Version != SchemaVersion {
 		t.Fatalf("version = %d, want %d", got.Version, SchemaVersion)
+	}
+}
+
+func TestSaveAndLoadPausedRoundTrip(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	st := NewAt(path)
+
+	want := State{
+		Status:        StatusPaused,
+		PresetMinutes: 15,
+		RemainingSec:  321,
+	}
+	if err := st.Save(want); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	got, err := st.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if got == nil {
+		t.Fatal("Load returned nil state")
+	}
+	if got.Status != StatusPaused || got.RemainingSec != 321 || got.PresetMinutes != 15 {
+		t.Fatalf("unexpected paused state: %+v", got)
+	}
+}
+
+func TestLoadLegacyRunningStateWithoutStatus(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	deadline := time.Now().Add(10 * time.Minute).UTC().Format(time.RFC3339Nano)
+	data := `{"version":1,"presetMinutes":30,"deadline":"` + deadline + `"}`
+	if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+
+	got, err := NewAt(path).Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if got == nil || got.Status != StatusRunning {
+		t.Fatalf("legacy state should default to running, got %+v", got)
 	}
 }
 

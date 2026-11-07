@@ -12,3 +12,8 @@ var IconIdle []byte
 //
 //go:embed icon-active.png
 var IconActive []byte
+
+// IconPaused is shown while a countdown is paused.
+//
+//go:embed icon-paused.png
+var IconPaused []byte

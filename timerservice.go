@@ -20,6 +20,16 @@ func (s *TimerService) Start(minutes int) error {
 	return s.core.Start(minutes)
 }
 
+// Pause freezes the running countdown.
+func (s *TimerService) Pause() error {
+	return s.core.Pause()
+}
+
+// Resume continues a paused countdown.
+func (s *TimerService) Resume() error {
+	return s.core.Resume()
+}
+
 // Stop cancels the running countdown.
 func (s *TimerService) Stop() error {
 	return s.core.Stop()

@@ -83,6 +83,12 @@ func (s *Service) Restore() error {
 		return nil
 	}
 
+	if persisted.Status == store.StatusPaused {
+		s.timer.RestorePaused(persisted.PresetMinutes, persisted.RemainingSec)
+		s.publishLocked()
+		return nil
+	}
+
 	_, finished := s.timer.Restore(persisted.PresetMinutes, persisted.Deadline)
 	if !finished {
 		s.publishLocked()
@@ -108,18 +114,47 @@ func (s *Service) Start(minutes int) error {
 	}
 	s.notice = ""
 
-	deadline, ok := s.timer.Deadline()
-	if ok {
-		if err := s.store.Save(store.State{
-			PresetMinutes: snapshot.PresetMinutes,
-			StartedAt:     deadline.Add(-time.Duration(snapshot.TotalSec) * time.Second),
-			Deadline:      deadline,
-		}); err != nil {
-			s.logf("save timer state: %v", err)
-			s.notice = i18n.NoticeSaveFailed
-		}
+	if err := s.persistLocked(snapshot); err != nil {
+		s.logf("save timer state: %v", err)
+		s.notice = i18n.NoticeSaveFailed
 	}
 
+	s.publishLocked()
+	return nil
+}
+
+// Pause freezes the running countdown and persists the remaining time.
+func (s *Service) Pause() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	snapshot, err := s.timer.Pause()
+	if err != nil {
+		return err
+	}
+	s.notice = ""
+	if err := s.persistLocked(snapshot); err != nil {
+		s.logf("save paused timer state: %v", err)
+		s.notice = i18n.NoticeSaveFailed
+	}
+	s.publishLocked()
+	return nil
+}
+
+// Resume continues a paused countdown from the frozen remaining time.
+func (s *Service) Resume() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	snapshot, err := s.timer.Resume()
+	if err != nil {
+		return err
+	}
+	s.notice = ""
+	if err := s.persistLocked(snapshot); err != nil {
+		s.logf("save resumed timer state: %v", err)
+		s.notice = i18n.NoticeSaveFailed
+	}
 	s.publishLocked()
 	return nil
 }
@@ -229,5 +264,33 @@ func (s *Service) stateLocked() State {
 		TotalSec:      snapshot.TotalSec,
 		Notice:        s.notice,
 		Autostart:     s.autostartOn,
+	}
+}
+
+func (s *Service) persistLocked(snapshot timer.Snapshot) error {
+	switch snapshot.Status {
+	case timer.Running:
+		deadline, ok := s.timer.Deadline()
+		if !ok {
+			return nil
+		}
+		return s.store.Save(store.State{
+			Status:        store.StatusRunning,
+			PresetMinutes: snapshot.PresetMinutes,
+			StartedAt:     deadline.Add(-time.Duration(snapshot.TotalSec) * time.Second),
+			Deadline:      deadline,
+		})
+	case timer.Paused:
+		remaining, ok := s.timer.RemainingSec()
+		if !ok {
+			return nil
+		}
+		return s.store.Save(store.State{
+			Status:        store.StatusPaused,
+			PresetMinutes: snapshot.PresetMinutes,
+			RemainingSec:  remaining,
+		})
+	default:
+		return nil
 	}
 }

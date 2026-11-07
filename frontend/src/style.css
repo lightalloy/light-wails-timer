@@ -65,6 +65,10 @@ body[data-status="idle"] .ring-progress {
     stroke: #5f6368;
 }
 
+body[data-status="paused"] .ring-progress {
+    stroke: var(--amber);
+}
+
 .time {
     position: absolute;
     inset: 0;
@@ -82,6 +86,7 @@ body[data-status="idle"] .ring-progress {
 }
 
 .preset,
+.pause,
 .stop {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -98,24 +103,34 @@ body[data-status="idle"] .ring-progress {
 }
 
 .preset:hover,
+.pause:not(:disabled):hover,
 .stop:not(:disabled):hover {
     background: #2b2f31;
     border-color: #5f6368;
 }
 
 .preset:focus-visible,
+.pause:focus-visible,
 .stop:focus-visible {
     outline: 2px solid var(--green);
     outline-offset: 2px;
 }
 
-.stop {
+.actions {
+    display: flex;
+    gap: 8px;
     width: 100%;
     max-width: 220px;
+}
+
+.pause,
+.stop {
+    flex: 1;
     padding: 9px 12px;
     font-size: 14px;
 }
 
+.pause:disabled,
 .stop:disabled {
     opacity: 0.45;
     cursor: default;

@@ -29,6 +29,20 @@ export function GetState(): $CancellablePromise<service$0.State> {
 }
 
 /**
+ * Pause freezes the running countdown.
+ */
+export function Pause(): $CancellablePromise<void> {
+    return $Call.ByID(1073448682);
+}
+
+/**
+ * Resume continues a paused countdown.
+ */
+export function Resume(): $CancellablePromise<void> {
+    return $Call.ByID(537731691);
+}
+
+/**
  * SetAutostart enables or disables launch at login.
  */
 export function SetAutostart(enabled: boolean): $CancellablePromise<void> {

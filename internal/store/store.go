@@ -13,12 +13,20 @@ import (
 // SchemaVersion is the version of the on-disk state format.
 const SchemaVersion = 1
 
+// Status values persisted with the countdown.
+const (
+	StatusRunning = "running"
+	StatusPaused  = "paused"
+)
+
 // State is the persisted countdown.
 type State struct {
 	Version       int       `json:"version"`
+	Status        string    `json:"status,omitempty"`
 	PresetMinutes int       `json:"presetMinutes"`
-	StartedAt     time.Time `json:"startedAt"`
-	Deadline      time.Time `json:"deadline"`
+	StartedAt     time.Time `json:"startedAt,omitempty"`
+	Deadline      time.Time `json:"deadline,omitempty"`
+	RemainingSec  int       `json:"remainingSec,omitempty"`
 }
 
 // Store reads and writes a single state file.
@@ -73,8 +81,26 @@ func (s *Store) Load() (*State, error) {
 	if state.Version != SchemaVersion {
 		return nil, fmt.Errorf("unsupported timer state version %d", state.Version)
 	}
-	if state.PresetMinutes <= 0 || state.Deadline.IsZero() {
+	if state.PresetMinutes <= 0 {
 		return nil, errors.New("incomplete timer state")
+	}
+
+	// Legacy files omit status and always represent a running countdown.
+	if state.Status == "" {
+		state.Status = StatusRunning
+	}
+
+	switch state.Status {
+	case StatusRunning:
+		if state.Deadline.IsZero() {
+			return nil, errors.New("incomplete timer state")
+		}
+	case StatusPaused:
+		if state.RemainingSec <= 0 {
+			return nil, errors.New("incomplete timer state")
+		}
+	default:
+		return nil, fmt.Errorf("unsupported timer status %q", state.Status)
 	}
 	return &state, nil
 }
@@ -82,6 +108,9 @@ func (s *Store) Load() (*State, error) {
 // Save writes the state atomically with 0600 permissions.
 func (s *Store) Save(state State) error {
 	state.Version = SchemaVersion
+	if state.Status == "" {
+		state.Status = StatusRunning
+	}
 	data, err := json.Marshal(state)
 	if err != nil {
 		return fmt.Errorf("encode timer state: %w", err)
